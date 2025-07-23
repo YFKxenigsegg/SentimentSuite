@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  api:
+    build:
+      context: ./src/SentimentSuite.Video.Api
+    ports:
+      - "5156:8080"
+    depends_on:
+      - summarizer
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - LocalSummary__BaseUrl=http://summarizer:8000
+    networks:
+      - app-network
+  summarizer:
+    build:
+      context: ./src/SentimentSuite.Summarizer.PyService
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
