@@ -1,5 +1,10 @@
 namespace SentimentSuite.Video.Api.Services;
 
+public interface IHybridSummaryService
+{
+    Task<string> SummarizeAsync(string transcript, CancellationToken cancellationToken);
+}
+
 public sealed class HybridSummaryService(
     SonnetSummaryService sonnet,
     LocalSummaryService local)

@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   api:
     build:
@@ -7,11 +8,15 @@ services:
       - "5156:8080"
     depends_on:
       - summarizer
+      - mongo
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - LocalSummary__BaseUrl=http://summarizer:8000
+      - MongoDB__ConnectionString=mongodb://mongo:27017
+      - MongoDB__DatabaseName=SentimentSuite
     networks:
       - app-network
+
   summarizer:
     build:
       context: ./src/SentimentSuite.Summarizer.PyService
@@ -19,6 +24,18 @@ services:
       - "8000:8000"
     networks:
       - app-network
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
 
 networks:
   app-network:

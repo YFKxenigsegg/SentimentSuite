@@ -1,5 +1,10 @@
 namespace SentimentSuite.Video.Api.Services;
 
+public interface IPromptService
+{
+    string CreateSummaryPrompt(string transcript);
+}
+
 public sealed class PromptService : IPromptService
 {
     public string CreateSummaryPrompt(string transcript) =>
