@@ -1,11 +1,13 @@
 using SentimentSuite.Video.Api.Models;
+using SentimentSuite.Video.Api.Domain.Exceptions;
 
 namespace SentimentSuite.Video.Api.Services;
 
 public sealed class SonnetSummaryService(
     HttpClient httpClient,
     IOptions<AnthropicOptions> options,
-    IPromptService promptService)
+    IPromptService promptService,
+    ILogger<SonnetSummaryService> logger)
     : ITextSummaryService
 {
     private readonly HttpClient _httpClient = httpClient;
@@ -14,14 +16,52 @@ public sealed class SonnetSummaryService(
 
     public async Task<string> SummarizeAsync(string transcript, CancellationToken cancellationToken)
     {
-        var request = CreateRequest(transcript);
-        var httpRequest = CreateHttpRequest(request);
+        try
+        {
+            logger.LogInformation("Sending request to Anthropic Claude API");
+            
+            var request = CreateRequest(transcript);
+            var httpRequest = CreateHttpRequest(request);
 
-        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
-        response.EnsureSuccessStatusCode();
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogError("Anthropic API returned {StatusCode}: {ErrorContent}", 
+                    response.StatusCode, errorContent);
+                
+                throw new SummarizationFailedException("Anthropic Claude", 
+                    $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
+            }
 
-        var anthropicResponse = await response.Content.ReadFromJsonAsync<AnthropicResponse>(cancellationToken);
-        return anthropicResponse?.Content.FirstOrDefault()?.Text ?? string.Empty;
+            var anthropicResponse = await response.Content.ReadFromJsonAsync<AnthropicResponse>(cancellationToken);
+            var summary = anthropicResponse?.Content.FirstOrDefault()?.Text;
+            
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                logger.LogWarning("Anthropic API returned empty summary");
+                throw new SummarizationFailedException("Anthropic Claude", "Empty summary returned");
+            }
+
+            logger.LogInformation("Successfully received summary from Anthropic Claude");
+            return summary;
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Network error communicating with Anthropic API");
+            throw new SummarizationFailedException("Anthropic Claude", ex);
+        }
+        catch (TaskCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("Request to Anthropic API was cancelled");
+            throw;
+        }
+        catch (Exception ex) when (ex is not SummarizationFailedException)
+        {
+            logger.LogError(ex, "Unexpected error in Anthropic summarization service");
+            throw new SummarizationFailedException("Anthropic Claude", ex);
+        }
     }
 
     private AnthropicRequest CreateRequest(string transcript) =>

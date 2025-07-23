@@ -3,7 +3,8 @@ version: '3.8'
 services:
   api:
     build:
-      context: ./src/SentimentSuite.Video.Api
+      context: ./src
+      dockerfile: SentimentSuite.Video.Api/Dockerfile
     ports:
       - "5156:8080"
     depends_on:

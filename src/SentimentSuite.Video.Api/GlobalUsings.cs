@@ -5,3 +5,6 @@ global using System.Threading.Tasks;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Options;
+global using Microsoft.Extensions.Logging;
+global using MongoDB.Bson;
+global using MongoDB.Driver;
