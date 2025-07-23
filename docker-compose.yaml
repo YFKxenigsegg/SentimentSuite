@@ -10,11 +10,13 @@ services:
     depends_on:
       - summarizer
       - mongo
+      - redis
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - LocalSummary__BaseUrl=http://summarizer:8000
       - MongoDB__ConnectionString=mongodb://mongo:27017
       - MongoDB__DatabaseName=SentimentSuite
+      - Redis__ConnectionString=redis:6379
     networks:
       - app-network
 
@@ -35,8 +37,19 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - app-network
+
 volumes:
   mongo_data:
+  redis_data:
 
 networks:
   app-network:

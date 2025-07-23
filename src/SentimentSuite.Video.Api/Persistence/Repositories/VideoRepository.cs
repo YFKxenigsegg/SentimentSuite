@@ -1,4 +1,3 @@
-using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using SentimentSuite.Video.Api.Persistence.Options;
 using VideoEntity = SentimentSuite.Video.Api.Domain.Videos.Video;
